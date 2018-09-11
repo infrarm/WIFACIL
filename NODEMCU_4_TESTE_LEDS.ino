@@ -14,7 +14,7 @@ int LED3 = D3;
 int LED4 = D4;
 
 void setup(void){
-  //the HTML of the web page
+  //HTML PARA A PÁGINA A EXIBIR
   page = "<h1>ACIONAMENTO WIFI - TMECA 28</h1><p>DISPOSITIVO A &nbsp;&nbsp;&nbsp;<a href=\"LED2On\"><button>ON</button></a>&nbsp;<a href=\"LED2Off\"><button>OFF</button></a></p><p>DISPOSITIVO B &nbsp;&nbsp;&nbsp;<a href=\"LED3On\"><button>ON</button></a>&nbsp;<a href=\"LED3Off\"><button>OFF</button></a></p><p>DISPOSITIVO C &nbsp;&nbsp;&nbsp;<a href=\"LED4On\"><button>ON</button></a>&nbsp;<a href=\"LED4Off\"><button>OFF</button></a></p>";
   //make the LED pin output and initially turned off
   pinMode(LED2, OUTPUT);
