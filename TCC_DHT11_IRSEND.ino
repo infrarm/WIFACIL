@@ -20,6 +20,8 @@ DHT dht(DHTPin, DHTTYPE);
 static char celsiusTemp[7];
 static char fahrenheitTemp[7];
 static char humidityTemp[7];
+
+String ultimo_comando = "NENHUM";
  
 String page = "";
 int LED2 = D2;
@@ -29,8 +31,9 @@ int LED4 = D4;
 void setup(void){
   dht.begin();
   //HTML PARA A PÁGINA A EXIBIR
-  page = "<h1>ACIONAMENTO WIFI - TMECA 28</h1><p>DISPOSITIVO A &nbsp;&nbsp;&nbsp;<a href=\"LED2On\"><button>ON</button></a>&nbsp;<a href=\"LED2Off\"><button>OFF</button></a></p><p>DISPOSITIVO B &nbsp;&nbsp;&nbsp;<a href=\"LED3On\"><button>ON</button></a>&nbsp;<a href=\"LED3Off\"><button>OFF</button></a></p><p>DISPOSITIVO C &nbsp;&nbsp;&nbsp;<a href=\"LED4On\"><button>ON</button></a>&nbsp;<a href=\"LED4Off\"><button>OFF</button></a></p><table><tr><th>DISPOSITIVO</th><th>STATUS</th> <th>OPC</th></tr><tr><td>DISP. A</td><td>OFF</td> <td>[73.8]</td></tr><tr><td>DISP. B</td><td>OFF</td> <td>[23.5]</td></tr><tr><td>DISP. C</td><td>OFF</td> <td>[38.25]</td></tr></table>";
+  //page = "<h1>ACIONAMENTO CONDICIONADOR DE AR WIFI - TMECA 28</h1><p>COMANDO - TEMP: 22 / MODO: COOL / FAN: MAX &nbsp;&nbsp;&nbsp;<a href=\"LED2On\"><button>ON</button></a>&nbsp;<a href=\"LED2Off\"><button>OFF</button></a></p><h2>LEITURAS:<h2><table><tr><td><b>ULTIMO COMANDO RECEBIDO:</b></td><td>[ON]:</td></tr><tr><td><b>TEMPERATURA:</b></td><td>[12.34]:</td></tr><tr><td><b>UMIDADE:</b></td><td>[45.67]</td></tr></table>";
   //make the LED pin output and initially turned off
+  leituradht();
   pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);
   pinMode(LED4, OUTPUT);
@@ -62,46 +65,16 @@ void setup(void){
   });
 
   //-----------------------------------------------
-  server.on("/LED2On", [](){
+  server.on("/DISPOn", [](){
+    ultimo_comando = "ON";
     leituradht();
     server.send(200, "text/html", page);
-    digitalWrite(LED2, HIGH);
     delay(1000);
   });
-  server.on("/LED2Off", [](){
+  server.on("/DISPOff", [](){
+    ultimo_comando = "OFF";
     leituradht();
     server.send(200, "text/html", page);
-    digitalWrite(LED2, LOW);
-    delay(1000); 
-  });
-  //-----------------------------------------------
-
-  //-----------------------------------------------
-  server.on("/LED3On", [](){
-    leituradht();
-    server.send(200, "text/html", page);
-    digitalWrite(LED3, HIGH);
-    delay(1000);
-  });
-  server.on("/LED3Off", [](){
-    leituradht();
-    server.send(200, "text/html", page);
-    digitalWrite(LED3, LOW);
-    delay(1000); 
-  });
-  //-----------------------------------------------
-
-  //-----------------------------------------------
-  server.on("/LED4On", [](){
-    leituradht();
-    server.send(200, "text/html", page);
-    digitalWrite(LED4, HIGH);
-    delay(1000);
-  });
-  server.on("/LED4Off", [](){
-    leituradht();
-    server.send(200, "text/html", page);
-    digitalWrite(LED4, LOW);
     delay(1000); 
   });
   //-----------------------------------------------
@@ -159,5 +132,18 @@ void leituradht(){
               Serial.print(" *C ");
               Serial.print(hif);
               Serial.println(" *F");
+            
+
+            //COLOCA OS DADOS NA HTML
+            
+              page = "<h1>ACIONAMENTO CONDICIONADOR DE AR WIFI - TMECA 28</h1><p>COMANDO - TEMP: 22 / MODO: COOL / FAN: MAX &nbsp;&nbsp;&nbsp;<a href=\"DISPOn\"><button>ON</button></a>&nbsp;<a href=\"DISPOff\"><button>OFF</button></a></p><h2>LEITURAS:<h2><table><tr><td><b>ULTIMO COMANDO RECEBIDO:</b></td><td>[";
+              page +=(ultimo_comando);
+              page +="]:</td></tr><tr><td><b>TEMPERATURA:</b></td><td>[";
+              page +=(t);
+              page +="]:</td></tr><tr><td><b>UMIDADE:</b></td><td>[";
+              page +=(h);
+              page +="]</td></tr></table>";
+
             }
+            //FIM DA VOID leituradht
 }
