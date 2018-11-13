@@ -1,12 +1,16 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x3F,2,1,0,4,5,6,7,3, POSITIVE);
 
 //IRSEND
 #include <IRremoteESP8266.h>
 #include <IRsend.h>
 
-const uint16_t kIrLed = 4;  // ESP8266 GPIO pin to use. Recommended: 4 (D2).
+const uint16_t kIrLed = D6;  // ESP8266 GPIO pin to use. Recommended: 4 (D2).
 IRsend irsend(kIrLed);  // Set the GPIO to be used to sending the message.
 
 uint16_t LIGA[199] = {4456, 4320,  596, 1602,  568, 520,  570, 1606,  568, 1602,  568, 522,  570, 520,  568, 1602,  568, 524,  570, 522,  570, 1604,  570, 520,  570, 522,  570, 1602,  570, 1602,  568, 520,  570, 1606,  572, 520,  570, 522,  570, 1604,  570, 1600,  570, 1600,  570, 1602,  570, 1600,  570, 1602,  570, 1608,  570, 1600,  570, 520,  570, 520,  570, 520,  570, 520,  570, 520,  572, 520,  570, 522,  570, 1602,  570, 520,  570, 1606,  570, 520,  570, 520,  570, 520,  570, 522,  570, 1606,  572, 518,  570, 1606,  568, 520,  570, 1606,  570, 1600,  570, 1600,  570, 1602,  634, 5094,  4446, 4312,  596, 1600,  572, 520,  570, 1604,  572, 1598,  572, 520,  570, 520,  570, 1600,  570, 522,  570, 522,  570, 1606,  570, 520,  570, 520,  572, 1600,  570, 1600,  572, 518,  570, 1608,  568, 522,  570, 520,  570, 1604,  570, 1600,  570, 1600,  570, 1600,  570, 1600,  570, 1602,  572, 1604,  570, 1600,  572, 520,  570, 520,  570, 520,  570, 518,  572, 520,  570, 524,  568, 522,  568, 1602,  570, 520,  568, 1606,  570, 520,  570, 520,  570, 520,  570, 522,  570, 1608,  570, 520,  570, 1604,  570, 522,  570, 1604,  570, 1602,  570, 1602,  570, 1604,  636};
@@ -32,34 +36,32 @@ static char celsiusTemp[7];
 static char fahrenheitTemp[7];
 static char humidityTemp[7];
 
-String ultimo_comando = "NENHUM";
+String ultimo_comando = "---";
  
 String page = "";
-int LED2 = D2;
-int LED3 = D3;
-int LED4 = D4;
+int IRLED = D6;
+//int LED3 = D3;
+//int LED4 = D4;
 
 void setup(void){
-  dht.begin();
-  //HTML PARA A PÁGINA A EXIBIR
-  //page = "<h1>ACIONAMENTO CONDICIONADOR DE AR WIFI - TMECA 28</h1><p>COMANDO - TEMP: 22 / MODO: COOL / FAN: MAX &nbsp;&nbsp;&nbsp;<a href=\"LED2On\"><button>ON</button></a>&nbsp;<a href=\"LED2Off\"><button>OFF</button></a></p><h2>LEITURAS:<h2><table><tr><td><b>ULTIMO COMANDO RECEBIDO:</b></td><td>[ON]:</td></tr><tr><td><b>TEMPERATURA:</b></td><td>[12.34]:</td></tr><tr><td><b>UMIDADE:</b></td><td>[45.67]</td></tr></table>";
-  //make the LED pin output and initially turned off
-  leituradht();
-  pinMode(LED2, OUTPUT);
-  pinMode(LED3, OUTPUT);
-  pinMode(LED4, OUTPUT);
+  lcd.begin (16,2);
+  lcd.setBacklight(HIGH);
   
-  digitalWrite(LED2, LOW);
-  digitalWrite(LED3, LOW);
-  digitalWrite(LED4, LOW);
+  dht.begin();
+  leituradht();
+  pinMode(IRLED, OUTPUT);
   
   WiFi.disconnect(); 
   delay(1000);
   Serial.begin(115200);
   WiFi.begin(ssid, password); //begin WiFi connection
   Serial.println("");
+  
  
   // Wait for connection
+  lcd.setCursor(0,0);
+  lcd.print("DESCONECTADO");
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -69,21 +71,31 @@ void setup(void){
   Serial.println(ssid);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-   
+
+  lcd.setCursor(0,0);
+  lcd.print("                ");
+  lcd.setCursor(0,0);
+  lcd.print(WiFi.localIP());
+
+
+  
   server.on("/", [](){
+    delay(200);
     server.send(200, "text/html", page);
     leituradht();
   });
 
   //-----------------------------------------------
   server.on("/DISPOn", [](){
-    ultimo_comando = "ON";
+    delay(200);
+    ultimo_comando = "ON ";
     leituradht();
     server.send(200, "text/html", page);
     irsend.sendRaw(LIGA, 199, 38);  // Send a raw data capture at 38kHz.
     delay(1000);
   });
   server.on("/DISPOff", [](){
+    delay(200);
     ultimo_comando = "OFF";
     leituradht();
     server.send(200, "text/html", page);
@@ -110,10 +122,10 @@ void leituradht(){
             float f = dht.readTemperature(true);
             // Check if any reads failed and exit early (to try again).
             if (isnan(h) || isnan(t) || isnan(f)) {
-              Serial.println("Failed to read from DHT sensor!");
-              strcpy(celsiusTemp,"Failed");
-              strcpy(fahrenheitTemp, "Failed");
-              strcpy(humidityTemp, "Failed");         
+              //Serial.println("Failed to read from DHT sensor!");
+              //strcpy(celsiusTemp,"Failed");
+              //strcpy(fahrenheitTemp, "Failed");
+              //strcpy(humidityTemp, "Failed");         
             }
             else{
               // Computes temperature values in Celsius + Fahrenheit and Humidity
@@ -123,7 +135,7 @@ void leituradht(){
               dtostrf(hif, 6, 2, fahrenheitTemp);         
               dtostrf(h, 6, 2, humidityTemp);
               // You can delete the following Serial.print's, it's just for debugging purposes
-              Serial.print("Humidity: ");
+              /*Serial.print("Humidity: ");
               Serial.print(h);
               Serial.print(" %\t Temperature: ");
               Serial.print(t);
@@ -144,7 +156,7 @@ void leituradht(){
               Serial.print(hic);
               Serial.print(" *C ");
               Serial.print(hif);
-              Serial.println(" *F");
+              Serial.println(" *F");*/
             
 
             //COLOCA OS DADOS NA HTML
@@ -158,5 +170,18 @@ void leituradht(){
               page +="]</td></tr></table>";
 
             }
+
+            //COLOCA OS DADOS NA LCD
+              
+              lcd.setCursor(0,1);
+              lcd.print("T: ");
+              lcd.setCursor(3,1);
+              lcd.print(String(t, DEC));
+              lcd.setCursor(5,1);
+              lcd.print("    ");
+              lcd.setCursor(9,1);
+              lcd.print("CMD: ");
+              lcd.setCursor(13,1);
+              lcd.print(ultimo_comando);
             //FIM DA VOID leituradht
 }
